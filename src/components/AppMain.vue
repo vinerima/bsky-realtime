@@ -10,13 +10,16 @@
         <input type="text" id="user" name="user" v-model="usersString" />
       </div>
       <div class="inputGroup">
+        <label for="keepNumber">Show last skeets</label>
+        <input type="number" id="keepNumber" name="keepNumber" v-model="keepNumber" />
+      </div>
+      <div class="inputGroup">
         <button @click="onSubmit">{{ submitWord }}</button>
         <button @click="onStop" v-if="jetstream">Stop Stream</button>
       </div>
     </div>
-
     <div id="view">
-      <SkeetView v-for="(skeet, index) in skeets" :key="index" :skeet />
+      <SkeetView v-for="(skeet, index) in showSkeets" :key="index" :skeet />
     </div>
   </main>
 </template>
@@ -29,8 +32,13 @@ import type { Post } from '@/types/post'
 
 const keywordsString: Ref<string | undefined> = ref()
 const usersString: Ref<string | undefined> = ref()
+const keepNumber: Ref<number> = ref(25)
 const skeets: Ref<Post[]> = ref([])
+const showSkeets: ComputedRef<Post[]> = computed(() => {
+  return skeets.value.slice(0, keep.value)
+})
 
+const keep: Ref<number> = ref(25)
 const keywords: Ref<string[] | undefined> = ref()
 
 const users: ComputedRef<string[] | undefined> = computed(() => {
@@ -40,6 +48,8 @@ const users: ComputedRef<string[] | undefined> = computed(() => {
 const submitWord = ref('Start Stream')
 
 const onSubmit = () => {
+  keywords.value = keywordsString.value?.split(',')
+  keep.value = keepNumber.value
   if (jetstreamRunning.value) {
     updateWebSocket()
   } else {
@@ -117,8 +127,6 @@ const getDids = async (users: string[]): Promise<string[]> => {
 const updateWebSocket = async () => {
   console.info('update user(s) and/or keyword(s)')
 
-  keywords.value = keywordsString.value?.split(',')
-
   let dids: string[] = []
   if (users.value && users.value[0].length > 1) {
     console.log(users.value)
@@ -145,6 +153,9 @@ onBeforeMount(() => {
 </script>
 
 <style lang="scss">
+main {
+  height: 100%;
+}
 #search {
   position: sticky;
   top: 0;
