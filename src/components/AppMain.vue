@@ -13,7 +13,7 @@
         <label for="keepNumber">Show last skeets</label>
         <input type="number" id="keepNumber" name="keepNumber" v-model="keepNumber" />
       </div>
-      <div class="inputGroup">
+      <div class="buttonGroup">
         <button @click="onSubmit">{{ submitWord }}</button>
         <button @click="onStop" v-if="jetstream">Stop Stream</button>
       </div>
@@ -45,6 +45,8 @@ const users: ComputedRef<string[] | undefined> = computed(() => {
   return usersString.value?.split(',')
 })
 
+const userDids: Ref<{ did: string; handle: string }[]> = ref([])
+
 const submitWord = ref('Start Stream')
 
 const onSubmit = () => {
@@ -55,6 +57,7 @@ const onSubmit = () => {
   } else {
     submitWord.value = 'Update'
     connectWebSocket()
+    setTimeout(updateWebSocket, 500)
   }
 }
 
@@ -76,7 +79,7 @@ const jetstream: Ref<WebSocket | null> = ref(null)
 
 const connectWebSocket = () => {
   jetstream.value = new WebSocket(
-    'wss://jetstream1.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post',
+    'wss://jetstream1.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post&requireHello=true',
   )
 
   jetstream.value.onopen = () => {
@@ -86,7 +89,14 @@ const connectWebSocket = () => {
   jetstream.value.onmessage = (event) => {
     const skeet = websocketToFeedEntry(event.data)
     if (skeet && skeetContainsKeywords(skeet)) {
-      skeets.value.unshift(skeet)
+      const handle = userDids.value.find((userDid) => {
+        return userDid.did === skeet.authorDid
+      })?.handle
+      console.log(handle)
+      skeets.value.unshift({
+        ...skeet,
+        authorHandle: handle,
+      })
     }
   }
 
@@ -99,7 +109,7 @@ const connectWebSocket = () => {
   }
 }
 
-const getDids = async (users: string[]): Promise<string[]> => {
+const getDids = async (users: string[]): Promise<{ did: string; handle: string }[]> => {
   const results = await Promise.allSettled(
     users.map(async (user) => {
       try {
@@ -110,7 +120,7 @@ const getDids = async (users: string[]): Promise<string[]> => {
           throw new Error(`Fehler beim Abrufen von ${user}: ${response.status}`)
         }
         const data = await response.json()
-        return data.did
+        return { did: data.did, handle: user }
       } catch (error) {
         console.error(`Fehler für ${user}:`, error)
         return null // Fehlerhafte Anfragen geben `null` zurück
@@ -121,16 +131,16 @@ const getDids = async (users: string[]): Promise<string[]> => {
   // Nur erfolgreiche `did`-Werte zurückgeben
   return results
     .filter((result) => result.status === 'fulfilled' && result.value !== null)
-    .map((result) => (result as PromiseFulfilledResult<string>).value)
+    .map((result) => (result as PromiseFulfilledResult<{ did: string; handle: string }>).value)
 }
 
 const updateWebSocket = async () => {
   console.info('update user(s) and/or keyword(s)')
-
   let dids: string[] = []
+  userDids.value = []
   if (users.value && users.value[0].length > 1) {
-    console.log(users.value)
-    dids = await getDids(users.value)
+    userDids.value = await getDids(users.value)
+    dids = userDids.value.map((userDid) => userDid.did)
   }
   jetstream.value?.send(
     JSON.stringify({
@@ -161,5 +171,43 @@ main {
   top: 0;
   background: var(--color-background);
   padding-bottom: 1rem;
+}
+
+.inputGroup {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 1rem;
+  padding-bottom: 0.5rem;
+  max-width: 600px;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 1rem;
+  padding: 0.5rem 0;
+}
+
+button,
+input {
+  border: 2px solid var(--color-text);
+  background-color: inherit;
+  color: white;
+
+  &:hover,
+  &:focus {
+    border-color: white;
+  }
+
+  &:focus-visible {
+    border-color: red;
+  }
+}
+
+@media screen and (max-width: 371px) {
+  .inputGroup {
+    grid-template-rows: auto auto;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
 }
 </style>

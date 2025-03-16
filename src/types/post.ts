@@ -13,11 +13,12 @@ export type Post = {
   uri: string
   cid: string
   authorDid: string
+  authorHandle?: string
   text: string
   embed: unknown
   rootUri: string
   rootCid: string
-  indexedAt?: Date
+  createdAt?: Date
 }
 
 /**

@@ -14,15 +14,17 @@ import AppFooter from './components/AppFooter.vue'
 
 <style scoped>
 #wrapper {
-  height: 100%;
   display: flex;
   flex-direction: column;
   justify-content: space-between;
 }
 
+#header {
+  position: sticky;
+}
+
 #header,
 #footer {
-  position: sticky;
   background: var(--color-background);
 }
 
@@ -31,7 +33,6 @@ import AppFooter from './components/AppFooter.vue'
 }
 
 #footer {
-  bottom: 0;
   padding-top: 1rem;
 }
 

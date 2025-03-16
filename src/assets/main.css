@@ -7,3 +7,11 @@
   padding: 2rem;
   font-weight: normal;
 }
+
+a {
+  color: white;
+}
+
+a:visited {
+  color: grey;
+}
