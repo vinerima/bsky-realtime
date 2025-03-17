@@ -1,7 +1,8 @@
 <template>
   <div class="skeet-view">
-    <p class="skeet-author" v-if="skeet.authorHandle">{{ skeet.authorHandle }}</p>
-    <a :href="authorLink" class="skeet-author" target="_blank" v-else>{{ skeet.authorDid }}</a>
+    <a :href="authorLink" class="skeet-author" target="_blank">{{
+      skeet.authorHandle ?? skeet.authorDid
+    }}</a>
     <p class="skeet-date" v-if="skeet.createdAt">{{ skeet.createdAt }}</p>
     <p class="skeet-text">{{ skeet.text }}</p>
     <a :href="skeetLink" class="skeet-link" target="_blank">goto skeet</a>
@@ -27,7 +28,6 @@ const skeetLink = computed(() => {
 <style lang="scss">
 .skeet-author {
   font-weight: bold;
-  color: white;
 }
 .skeet-view {
   padding-top: 1rem;

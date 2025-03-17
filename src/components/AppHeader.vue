@@ -9,6 +9,6 @@ header {
   font-size: larger;
   font-weight: bolder;
   padding-bottom: 0.5rem;
-  color: white;
+  color: var(--color-heading);
 }
 </style>

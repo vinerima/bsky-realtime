@@ -3,11 +3,25 @@
     <div id="search">
       <div class="inputGroup">
         <label for="keyword">Keyword(s)</label>
-        <input type="text" id="keyword" name="keyword" v-model="keywordsString" />
+        <input
+          type="text"
+          id="keyword"
+          name="keyword"
+          pattern="^(?:[^,]+)(?:,\s*[^,]+)*$"
+          placeholder="keyword(s) (comma-seperated)"
+          v-model="keywordsString"
+        />
       </div>
       <div class="inputGroup">
         <label for="user">User(s)</label>
-        <input type="text" id="user" name="user" v-model="usersString" />
+        <input
+          type="text"
+          id="user"
+          name="user"
+          pattern="^(?:(?:[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.)+[A-Za-z]{2,})(?:,\s*(?:(?:[A-Za-z0-9]+(?:-[A-Za-z0-9]+)*\.)+[A-Za-z]{2,}))*$"
+          placeholder="handle(s) (comma-seperated)"
+          v-model="usersString"
+        />
       </div>
       <div class="inputGroup">
         <label for="keepNumber">Show last skeets</label>
@@ -57,7 +71,6 @@ const onSubmit = () => {
   } else {
     submitWord.value = 'Update'
     connectWebSocket()
-    setTimeout(updateWebSocket, 500)
   }
 }
 
@@ -67,6 +80,16 @@ const skeetContainsKeywords = (skeet: Post) => {
   }
 
   return keywords.value.some((keyword) => skeet.text.includes(keyword))
+}
+
+const skeetIsFromAuthor = (skeet: Post) => {
+  if (!users.value) {
+    return true
+  }
+
+  return userDids.value.find((userDid) => {
+    return userDid.did === skeet.authorDid
+  })
 }
 
 const onStop = () => {
@@ -84,15 +107,15 @@ const connectWebSocket = () => {
 
   jetstream.value.onopen = () => {
     console.log('WebSocket connected')
+    updateWebSocket(true)
   }
 
   jetstream.value.onmessage = (event) => {
     const skeet = websocketToFeedEntry(event.data)
-    if (skeet && skeetContainsKeywords(skeet)) {
+    if (skeet && skeetContainsKeywords(skeet) && skeetIsFromAuthor(skeet)) {
       const handle = userDids.value.find((userDid) => {
         return userDid.did === skeet.authorDid
       })?.handle
-      console.log(handle)
       skeets.value.unshift({
         ...skeet,
         authorHandle: handle,
@@ -112,17 +135,18 @@ const connectWebSocket = () => {
 const getDids = async (users: string[]): Promise<{ did: string; handle: string }[]> => {
   const results = await Promise.allSettled(
     users.map(async (user) => {
+      const trimUser = user.trim()
       try {
         const response = await fetch(
-          `https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=${user}`,
+          `https://bsky.social/xrpc/com.atproto.identity.resolveHandle?handle=${trimUser}`,
         )
         if (!response.ok) {
-          throw new Error(`Fehler beim Abrufen von ${user}: ${response.status}`)
+          throw new Error(`Fehler beim Abrufen von ${trimUser}: ${response.status}`)
         }
         const data = await response.json()
-        return { did: data.did, handle: user }
+        return { did: data.did, handle: trimUser }
       } catch (error) {
-        console.error(`Fehler für ${user}:`, error)
+        console.error(`Fehler für ${trimUser}:`, error)
         return null // Fehlerhafte Anfragen geben `null` zurück
       }
     }),
@@ -134,20 +158,21 @@ const getDids = async (users: string[]): Promise<{ did: string; handle: string }
     .map((result) => (result as PromiseFulfilledResult<{ did: string; handle: string }>).value)
 }
 
-const updateWebSocket = async () => {
-  console.info('update user(s) and/or keyword(s)')
-  let dids: string[] = []
+const updateWebSocket = async (silent = false) => {
+  if (!silent) {
+    console.info('update user(s) and/or keyword(s)')
+  }
+
   userDids.value = []
   if (users.value && users.value[0].length > 1) {
     userDids.value = await getDids(users.value)
-    dids = userDids.value.map((userDid) => userDid.did)
   }
   jetstream.value?.send(
     JSON.stringify({
       type: 'options_update',
       payload: {
         wantedCollections: ['app.bsky.feed.post'],
-        wantedDids: dids,
+        wantedDids: userDids.value.map((userDid) => userDid.did),
       },
     }),
   )
@@ -185,22 +210,6 @@ main {
   display: flex;
   gap: 1rem;
   padding: 0.5rem 0;
-}
-
-button,
-input {
-  border: 2px solid var(--color-text);
-  background-color: inherit;
-  color: white;
-
-  &:hover,
-  &:focus {
-    border-color: white;
-  }
-
-  &:focus-visible {
-    border-color: red;
-  }
 }
 
 @media screen and (max-width: 371px) {
