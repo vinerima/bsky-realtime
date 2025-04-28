@@ -1,8 +1,11 @@
 <template>
   <div class="skeet-view">
-    <a :href="authorLink" class="skeet-author" target="_blank">{{
-      skeet.authorHandle ?? skeet.authorDid
-    }}</a>
+    <div class="skeet-author">
+      <img class="skeet-author-avatar" :src="skeet.authorAvatar" />
+      <a :href="authorLink" class="skeet-author-link" target="_blank">{{
+        skeet.authorHandle ?? skeet.authorDid
+      }}</a>
+    </div>
     <p class="skeet-date" v-if="skeet.createdAt">{{ skeet.createdAt }}</p>
     <p class="skeet-text">{{ skeet.text }}</p>
     <a :href="skeetLink" class="skeet-link" target="_blank">goto skeet</a>
@@ -27,9 +30,19 @@ const skeetLink = computed(() => {
 
 <style lang="scss">
 .skeet-author {
+  display: flex;
+  flex-direction: row;
+  column-gap: 1rem;
+  padding-bottom: 0.5rem;
+}
+.skeet-author-avatar {
+  max-width: 2.5rem;
+}
+.skeet-author-link {
+  margin: auto 0;
   font-weight: bold;
 }
 .skeet-view {
-  padding-top: 1rem;
+  padding-top: 2rem;
 }
 </style>

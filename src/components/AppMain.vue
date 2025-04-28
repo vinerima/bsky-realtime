@@ -102,7 +102,7 @@ const jetstream: Ref<WebSocket | null> = ref(null)
 
 const connectWebSocket = () => {
   jetstream.value = new WebSocket(
-    'wss://jetstream1.us-east.bsky.network/subscribe?wantedCollections=app.bsky.feed.post&requireHello=true',
+    'wss://api.graze.social/app/api/v1/turbostream/turbostream?wantedCollections=app.bsky.feed.post&requireHello=true',
   )
 
   jetstream.value.onopen = () => {
@@ -113,13 +113,7 @@ const connectWebSocket = () => {
   jetstream.value.onmessage = (event) => {
     const skeet = websocketToFeedEntry(event.data)
     if (skeet && skeetContainsKeywords(skeet) && skeetIsFromAuthor(skeet)) {
-      const handle = userDids.value.find((userDid) => {
-        return userDid.did === skeet.authorDid
-      })?.handle
-      skeets.value.unshift({
-        ...skeet,
-        authorHandle: handle,
-      })
+      skeets.value.unshift(skeet)
     }
   }
 

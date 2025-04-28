@@ -12,7 +12,9 @@ import type { Post } from '@/types/post'
  * @returns A `FeedEntry` object if the data represents a newly created post, otherwise `null`.
  */
 export function websocketToFeedEntry(data: unknown): Post | null {
-  const message = JSON.parse(data as string) as WebsocketMessage
+  const wsData = JSON.parse(data as string) as WebsocketMessage
+  const message = wsData.message
+  const metaData = wsData.hydrated_metadata
   if (
     !message.commit ||
     !message.commit.record ||
@@ -29,6 +31,9 @@ export function websocketToFeedEntry(data: unknown): Post | null {
     cid: message.commit.cid,
     uri: messageUri,
     authorDid: message.did,
+    authorHandle: metaData.user.handle,
+    authorAvatar: metaData.user.avatar,
+    authorBanner: metaData.user.banner,
     text: message.commit.record.text,
     embed: message.commit.record.embed,
     rootCid: message.commit.record.reply?.root.cid ?? message.commit.cid,

@@ -21,25 +21,57 @@ import { type UriCid } from './post'
  *   - `cid`: The content identifier (CID) of the commit.
  */
 export type WebsocketMessage = {
+  at_uri: string
   did: string
   time_us: number
-  kind: string
-  commit: {
-    rev: string
-    operation: string
-    collection: string
-    rkey: string
-    record: {
-      $type: string
-      createdAt: string
-      subject: string
-      reply?: {
-        root: UriCid
-        parent: UriCid
+  message: {
+    did: string
+    time_us: number
+    kind: string
+    commit: {
+      rev: string
+      operation: string
+      collection: string
+      rkey: string
+      record: {
+        $type: string
+        createdAt: string
+        subject: string
+        reply?: {
+          root: UriCid
+          parent: UriCid
+        }
+        text: string
+        embed: unknown
       }
-      text: string
-      embed: unknown
+      cid: string
     }
-    cid: string
+  }
+  hydrated_metadata: {
+    user: {
+      did: string
+      handle: string
+      avatar: string
+      banner: string
+      created_at: string
+      description: string
+      display_name: string
+      followers_count: number
+      follows_count: number
+      indexed_at: string
+      labels: []
+      posts_count: number
+      verification: unknown
+      viewer: {
+        blocked_by: boolean
+        blocking: boolean
+        blocking_by_list: boolean
+        followed_by: boolean
+        following: boolean
+        known_followers: boolean
+        muted: boolean
+        muted_by_list: boolean
+      }
+    }
   }
 }

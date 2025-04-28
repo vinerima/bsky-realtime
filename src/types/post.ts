@@ -14,6 +14,8 @@ export type Post = {
   cid: string
   authorDid: string
   authorHandle?: string
+  authorAvatar?: string
+  authorBanner?: string
   text: string
   embed: unknown
   rootUri: string
