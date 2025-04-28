@@ -38,6 +38,8 @@ const skeetLink = computed(() => {
 }
 .skeet-author-avatar {
   max-height: 2.5rem;
+  aspect-ratio: 1;
+  background-color: lightgray;
 }
 .skeet-author-link {
   margin: auto 0;
