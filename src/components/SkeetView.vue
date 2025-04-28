@@ -34,9 +34,10 @@ const skeetLink = computed(() => {
   flex-direction: row;
   column-gap: 1rem;
   padding-bottom: 0.5rem;
+  height: 2.5rem;
 }
 .skeet-author-avatar {
-  max-width: 2.5rem;
+  max-height: 2.5rem;
 }
 .skeet-author-link {
   margin: auto 0;
