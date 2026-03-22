@@ -18,18 +18,8 @@ export type Post = {
   authorBanner?: string
   text: string
   embed: unknown
+  langs?: string[]
   rootUri: string
   rootCid: string
   createdAt?: Date
-}
-
-/**
- * Represents a URI/CID pair, commonly used to reference a particular piece of content.
- *
- * - `cid`: The content identifier (CID).
- * - `uri`: The unique resource identifier for the content.
- */
-export type UriCid = {
-  cid: string
-  uri: string
 }
