@@ -6,7 +6,7 @@
   --color-link: var(--color-heading);
   --color-link-hover: light-dark(rgb(19, 11, 87), rgb(98, 90, 184));
   --color-input-hover: var(--color-heading);
-  --color-input-focus-visible: var(var(--color-heading));
+  --color-input-focus-visible: var(--color-heading);
 }
 
 *,

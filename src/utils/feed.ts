@@ -1,5 +1,5 @@
-import type { WebsocketMessage } from "@/types/message"
-import type { Post } from "@/types/post"
+import type { WebsocketMessage } from '@/types/message'
+import type { Post } from '@/types/post'
 
 /**
  * Converts a validated WebSocket message into a Post, if possible.
@@ -13,16 +13,16 @@ export function websocketMessageToPost(data: WebsocketMessage): Post | null {
   if (
     !message.commit ||
     !message.commit.record ||
-    !message.commit.record["$type"] ||
+    !message.commit.record['$type'] ||
     !message.did ||
     !message.commit.cid ||
     !message.commit.rkey ||
-    message.commit.operation !== "create"
+    message.commit.operation !== 'create'
   ) {
     return null
   }
 
-  const messageUri = `at://${message.did}/${message.commit.record["$type"]}/${message.commit.rkey}`
+  const messageUri = `at://${message.did}/${message.commit.record['$type']}/${message.commit.rkey}`
 
   return {
     cid: message.commit.cid,
@@ -31,7 +31,7 @@ export function websocketMessageToPost(data: WebsocketMessage): Post | null {
     authorHandle: metaData.user.handle,
     authorAvatar: metaData.user.avatar ?? undefined,
     authorBanner: metaData.user.banner ?? undefined,
-    text: message.commit.record.text ?? "",
+    text: message.commit.record.text ?? '',
     embed: message.commit.record.embed,
     langs: message.commit.record.langs,
     rootCid: message.commit.record.reply?.root.cid ?? message.commit.cid,
