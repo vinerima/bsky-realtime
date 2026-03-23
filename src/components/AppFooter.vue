@@ -7,7 +7,10 @@
         >If you want to report any skeet please contact the bluesky moderation team.</a
       >
     </p>
-    <p>(c) 2025 <a href="https://github.com/vinerima/bsky-realtime" target="_blank">vinerima</a></p>
+    <p class="credit">
+      {{ new Date().getFullYear() }}
+      <a href="https://github.com/vinerima/bsky-realtime" target="_blank">vinerima</a>
+    </p>
   </footer>
 </template>
 
@@ -16,5 +19,9 @@
 <style lang="scss">
 footer {
   font-size: smaller;
+}
+
+.credit {
+  margin-top: 2rem;
 }
 </style>

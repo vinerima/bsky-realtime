@@ -57,40 +57,80 @@
         />
       </div>
       <div class="inputGroup">
-        <label for="keepNumber">Show last skeets</label>
-        <input type="number" id="keepNumber" name="keepNumber" v-model="keepNumber" />
+        <label for="pageSize">Posts per page</label>
+        <input type="number" id="pageSize" name="pageSize" v-model="pageSize" />
+      </div>
+      <div class="inputGroup">
+        <label for="manualUpdate">Manual update</label>
+        <input type="checkbox" id="manualUpdate" name="manualUpdate" v-model="manualUpdate" />
       </div>
       <div class="buttonGroup">
         <button @click="onSubmit">{{ submitWord }}</button>
         <button @click="onStop" v-if="isConnected">Stop Stream</button>
+        <button
+          v-if="manualUpdate && pendingCount > 0"
+          class="pending-banner"
+          @click="showPendingPosts"
+        >
+          Show {{ pendingCount }} new post{{ pendingCount === 1 ? '' : 's' }}
+        </button>
       </div>
     </div>
+    <PaginationControls
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :has-prev-page="hasPrevPage"
+      :has-next-page="hasNextPage"
+      @prev="prevPage"
+      @next="nextPage"
+    />
     <div id="view">
-      <SkeetView v-for="(skeet, index) in showSkeets" :key="index" :skeet />
+      <SkeetView v-for="skeet in displayedPosts" :key="skeet.id" :skeet />
     </div>
+    <PaginationControls
+      :current-page="currentPage"
+      :total-pages="totalPages"
+      :has-prev-page="hasPrevPage"
+      :has-next-page="hasNextPage"
+      @prev="prevPage"
+      @next="nextPage"
+    />
   </main>
 </template>
 
 <script setup lang="ts">
 import { websocketMessageToPost } from '@/utils/feed'
 import { websocketMessageSchema } from '@/types/message'
-import { computed, onBeforeUnmount, ref, type ComputedRef, type Ref } from 'vue'
+import { onBeforeUnmount, ref, computed, watch, type ComputedRef, type Ref } from 'vue'
 import { WebSocketClient, LogLevel } from '@vinerima/wah'
 import SkeetView from './SkeetView.vue'
+import PaginationControls from './PaginationControls.vue'
 import type { Post } from '@/types/post'
+import { addPost, clearAllPosts } from '@/db/skeetDb'
+import { usePagination } from '@/composables/usePagination'
 
 const keywordsString: Ref<string | undefined> = ref()
 const excludeKeywordsString: Ref<string | undefined> = ref()
 const usersString: Ref<string | undefined> = ref()
 const excludeUsersString: Ref<string | undefined> = ref()
 const languagesString: Ref<string | undefined> = ref()
-const keepNumber: Ref<number> = ref(25)
-const skeets: Ref<Post[]> = ref([])
-const showSkeets: ComputedRef<Post[]> = computed(() => {
-  return skeets.value.slice(0, keep.value)
-})
+const pageSize: Ref<number> = ref(25)
+const manualUpdate: Ref<boolean> = ref(false)
+const pendingCount: Ref<number> = ref(0)
 
-const keep: Ref<number> = ref(25)
+const {
+  currentPage,
+  totalCount,
+  totalPages,
+  displayedPosts,
+  hasNextPage,
+  hasPrevPage,
+  refreshPage,
+  nextPage,
+  prevPage,
+  resetToFirst,
+} = usePagination(pageSize)
+
 const keywords: Ref<string[] | undefined> = ref()
 const excludeKeywords: Ref<string[] | undefined> = ref()
 const languages: Ref<string[] | undefined> = ref()
@@ -115,7 +155,6 @@ const onSubmit = () => {
   keywords.value = keywordsString.value?.split(',')
   excludeKeywords.value = excludeKeywordsString.value?.split(',')
   languages.value = languagesString.value?.split(',').map((l) => l.trim())
-  keep.value = keepNumber.value
   if (isConnected.value) {
     updateWebSocket()
   } else {
@@ -170,6 +209,11 @@ const skeetIsFromExcludedAuthor = (skeet: Post) => {
   return excludeUserDids.value.some((userDid) => userDid.did === skeet.authorDid)
 }
 
+const showPendingPosts = async () => {
+  pendingCount.value = 0
+  await resetToFirst()
+}
+
 const onStop = () => {
   client?.close()
   client = null
@@ -177,7 +221,11 @@ const onStop = () => {
   submitWord.value = 'Start Stream'
 }
 
-const connectWebSocket = () => {
+const connectWebSocket = async () => {
+  await clearAllPosts()
+  pendingCount.value = 0
+  await refreshPage()
+
   client = new WebSocketClient({
     service: 'wss://api.graze.social/app/api/v1/turbostream/turbostream',
     queryParams: {
@@ -202,7 +250,14 @@ const connectWebSocket = () => {
       !skeetContainsExcludedKeywords(skeet) &&
       !skeetIsFromExcludedAuthor(skeet)
     ) {
-      skeets.value.unshift(skeet)
+      void (async () => {
+        await addPost(skeet)
+        if (manualUpdate.value && totalCount.value >= pageSize.value) {
+          pendingCount.value++
+        } else if (currentPage.value === 1) {
+          await refreshPage()
+        }
+      })()
     }
   })
 
@@ -273,6 +328,22 @@ const updateWebSocket = async (silent = false) => {
   })
 }
 
+watch(manualUpdate, async (isManual) => {
+  if (!isManual && pendingCount.value > 0) {
+    pendingCount.value = 0
+    if (currentPage.value === 1) {
+      await refreshPage()
+    }
+  }
+})
+
+watch(pageSize, async () => {
+  if (currentPage.value > totalPages.value) {
+    currentPage.value = totalPages.value
+  }
+  await refreshPage()
+})
+
 onBeforeUnmount(() => {
   client?.close()
 })
@@ -297,10 +368,31 @@ main {
   max-width: 600px;
 }
 
-.buttonGroup {
+.buttonGroup,
+.inputGroup:has(input[type='checkbox']) {
   display: flex;
   gap: 1rem;
-  padding: 0.5rem 0;
+  padding-bottom: 0.5rem;
+}
+
+button {
+  max-width: fit-content;
+}
+
+.pending-banner {
+  width: 100%;
+  padding: 0.5rem;
+  text-align: center;
+  cursor: pointer;
+  font-weight: bold;
+  color: var(--color-heading);
+  border: 2px solid var(--color-heading);
+  background-color: inherit;
+
+  &:hover {
+    background-color: var(--color-heading);
+    color: var(--color-background);
+  }
 }
 
 @media screen and (max-width: 371px) {

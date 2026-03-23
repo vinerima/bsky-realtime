@@ -10,6 +10,7 @@
  * - `indexedAt`: An optional `Date` indicating when the entry was indexed.
  */
 export type Post = {
+  id?: number
   uri: string
   cid: string
   authorDid: string
